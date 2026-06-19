@@ -1,0 +1,6 @@
+{
+  "name": "Discord Server Architect",
+  "description": "An AI-powered administrator for configuring Discord servers, managing channels, roles, and automated moderation securely with encrypted bot tokens.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
