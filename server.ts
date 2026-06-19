@@ -40,11 +40,11 @@ const ai = new GoogleGenAI({
 // Reusable robust helper to handle transient 503, 429 errors with fallback models
 async function generateContentWithRetry(params: any, retries = 2): Promise<any> {
   const modelsToTry = [
-    params.model || 'gemini-3.5-flash',
-    'gemini-3.5-flash',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
-    'gemini-3.1-pro-preview'
+    params.model || 'gemini-2.5-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash'
   ];
 
   // De-duplicate styles
@@ -551,7 +551,7 @@ app.post('/api/bot/architect/execute', async (req, res) => {
                 const edits: any = {};
                 if (action.params.name) edits.name = action.params.name;
                 if (action.params.topic && chan.isTextBased()) edits.topic = action.params.topic;
-                await chan.edit(edits, action.params.reason || 'AI Architect modify channel');
+                await chan.edit({ ...edits, reason: action.params.reason || 'AI Architect modify channel' });
                 executionResults.push({
                   action: action.type,
                   status: 'SUCCESS',
@@ -611,7 +611,7 @@ app.post('/api/bot/architect/execute', async (req, res) => {
                 const edits: any = {};
                 if (action.params.name) edits.name = action.params.name;
                 if (action.params.color) edits.color = action.params.color.replace('#', '0x');
-                await role.edit(edits, action.params.reason || 'AI Architect modify role');
+                await role.edit({ ...edits, reason: action.params.reason || 'AI Architect modify role' });
                 executionResults.push({
                   action: action.type,
                   status: 'SUCCESS',

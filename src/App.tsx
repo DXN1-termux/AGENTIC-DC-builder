@@ -1,56 +1,44 @@
 import React from 'react';
-import { auth } from './firebase';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { decryptBotToken } from './lib/encryption';
-import LoginScreen from './components/LoginScreen';
 import TokenSetup from './components/TokenSetup';
 import ArchitectConsole from './components/ArchitectConsole';
 import { Shield } from 'lucide-react';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
-  const [authChecking, setAuthChecking] = React.useState<boolean>(true);
-  
-  // Stored state config retrieved from localStorage
+  const [currentUser] = React.useState<any>({
+    uid: 'local-user',
+    email: 'local@example.com',
+    emailVerified: true,
+    displayName: 'Local Administrator',
+  });
   const [dbConfig, setDbConfig] = React.useState<any | null>(null);
-  const [configLoading, setConfigLoading] = React.useState<boolean>(false);
+  const [configLoading, setConfigLoading] = React.useState<boolean>(true);
 
   // Decrypted bot token stored in local React memory for live active operations
   const [localToken, setLocalToken] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setAuthChecking(false);
-      
-      if (user) {
-        setConfigLoading(true);
+    setConfigLoading(true);
+    try {
+      const storedConfig = localStorage.getItem(`discord_architect_config_${currentUser.uid}`);
+      if (storedConfig) {
+        const data = JSON.parse(storedConfig);
+        setDbConfig(data);
         try {
-          const storedConfig = localStorage.getItem(`discord_architect_config_${user.uid}`);
-          if (storedConfig) {
-            const data = JSON.parse(storedConfig);
-            setDbConfig(data);
-            try {
-              const decrypted = decryptBotToken(data.encryptedToken, user.uid);
-              setLocalToken(decrypted);
-            } catch (decErr) {
-              console.error('Auto-decryption of config failed:', decErr);
-            }
-          } else {
-            setDbConfig(null);
-          }
-        } catch (err) {
-          console.error('Failed to read config from localStorage', err);
-        } finally {
-          setConfigLoading(false);
+          const decrypted = decryptBotToken(data.encryptedToken, currentUser.uid);
+          setLocalToken(decrypted);
+        } catch (decErr) {
+          console.error('Auto-decryption of config failed:', decErr);
         }
       } else {
         setDbConfig(null);
-        setLocalToken(null);
       }
-    });
-    return () => unsub();
-  }, []);
+    } catch (err) {
+      console.error('Failed to read config from localStorage', err);
+    } finally {
+      setConfigLoading(false);
+    }
+  }, [currentUser.uid]);
 
   const handleSetupComplete = (decryptedToken: string, updatedConfig: any) => {
     setLocalToken(decryptedToken);
@@ -63,8 +51,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      setCurrentUser(null);
+      localStorage.removeItem(`discord_architect_config_${currentUser.uid}`);
       setDbConfig(null);
       setLocalToken(null);
     } catch (e) {
@@ -72,7 +59,7 @@ export default function App() {
     }
   };
 
-  if (authChecking || configLoading) {
+  if (configLoading) {
     return (
       <div id="loader" className="min-h-screen bg-slate-950 flex flex-col justify-center items-center font-sans gap-4">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-950/20 via-slate-950 to-slate-950 pointer-events-none" />
@@ -80,13 +67,9 @@ export default function App() {
           <div className="w-12 h-12 rounded-full border-4 border-violet-500/10 border-t-violet-400 animate-spin" />
           <Shield className="w-5 h-5 text-violet-400 absolute animate-pulse" />
         </div>
-        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider animate-pulse">Initializing Security Keys...</p>
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider animate-pulse">Initializing System...</p>
       </div>
     );
-  }
-
-  if (!currentUser) {
-    return <LoginScreen onLoginSuccess={() => {}} />;
   }
 
   // If user is authenticated, but hasn't decrypted / locked their token in the current active session
@@ -102,7 +85,7 @@ export default function App() {
             onClick={handleLogout}
             className="text-xs text-slate-400 hover:text-white bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg cursor-pointer transition"
           >
-            Sign Out
+            Reset Console
           </button>
         </div>
         <TokenSetup 
